@@ -1,0 +1,16 @@
+name: p2p
+version: "0.1.0"
+config-version: 2
+profile: p2p
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+models:
+  p2p:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
