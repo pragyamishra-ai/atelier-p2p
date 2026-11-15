@@ -4,6 +4,7 @@ from p2p.config import settings
 from p2p.data_gen.errors import inject_errors
 from p2p.data_gen.invoices import make_invoices, render_all
 from p2p.data_gen.master_data import make_materials, make_vendors
+from p2p.data_gen.scans import make_scans
 from p2p.data_gen.transactions import make_goods_receipts, make_purchase_orders
 
 
@@ -29,12 +30,18 @@ def main() -> None:
     invoices.to_csv(out / "invoices.csv", index=False)
     invoice_lines.to_csv(out / "invoice_lines.csv", index=False)
     manifest.to_csv(out / "error_manifest.csv", index=False)
-    render_all(invoices, invoice_lines, vendors, out / "invoices")
 
+    # Clean text PDFs for every invoice, then the eval inputs: clean copies or degraded scans.
+    render_all(invoices, invoice_lines, vendors, out / "invoices_clean")
+    meta = make_scans(invoices, out / "invoices_clean", out / "invoices", settings.seed)
+    meta.to_csv(out / "invoice_meta.csv", index=False)
+
+    q = meta["scan_quality"].value_counts().to_dict()
     print(
         f"seed={settings.seed}: {len(vendors)} vendors, {len(materials)} materials, "
         f"{len(po_headers)} POs, {len(po_lines)} PO lines, {len(receipts)} receipts, "
-        f"{len(invoices)} invoice PDFs, {len(manifest)} injected errors -> {out}"
+        f"{len(invoices)} invoice PDFs ({q.get('clean', 0)} clean, {q.get('mild', 0)} mild, "
+        f"{q.get('bad', 0)} bad), {len(manifest)} injected errors -> {out}"
     )
 
 

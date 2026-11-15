@@ -18,7 +18,7 @@ Work in progress. See [TODO.md](TODO.md).
 |---|---|
 | Synthetic data generator (master data, POs, goods receipts, invoices) | Done |
 | Error injection and answer-key manifest | Done |
-| PDF degradation (scan noise, skew, low resolution) | Planned |
+| PDF degradation (scan noise, skew, low resolution) | Done |
 | Extraction, warehouse, quality agent, copilot | Not started |
 
 ## Quickstart
