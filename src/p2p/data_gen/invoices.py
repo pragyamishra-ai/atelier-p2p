@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 VAT_RATES = {"IT": 0.22, "FR": 0.20, "DE": 0.19, "GB": 0.20, "CH": 0.081}
@@ -65,7 +66,7 @@ LABELS = {
         "desc": "Descrizione",
         "qty": "Q.tà",
         "unit": "UM",
-        "price": "Prezzo unitario",
+        "price": "Prezzo",
         "amount": "Importo",
         "net": "Imponibile",
         "vat": "IVA",
@@ -253,6 +254,15 @@ def render_invoice_pdf(header: dict, items: list[dict], vendor: dict, path: Path
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("BACKGROUND", (0, 0), (-1, 0), lay["head_bg"]),
     ]
+    # Shrink any header label that is wider than its column (6 pt padding on each side).
+    for col, (label, width) in enumerate(zip(rows[0], widths, strict=True)):
+        size = 8.5
+        while stringWidth(label, lay["bold"], size) > width - 12 and size > 6:
+            size -= 0.25
+        if stringWidth(label, lay["bold"], size) > width - 12:
+            raise ValueError(f"Header '{label}' does not fit its column in {lay['bold']}")
+        if size < 8.5:
+            style.append(("FONTSIZE", (col, 0), (col, 0), size))
     if lay["grid"]:
         style.append(("GRID", (0, 0), (-1, -1), 0.5, colors.grey))
     else:

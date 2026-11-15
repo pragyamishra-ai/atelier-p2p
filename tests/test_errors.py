@@ -3,7 +3,13 @@ from types import SimpleNamespace
 import pytest
 
 from p2p.data_gen.errors import ERROR_SHARES, inject_errors
-from p2p.data_gen.invoices import DEFAULT_VAT, VAT_RATES, make_invoices, render_invoice_pdf
+from p2p.data_gen.invoices import (
+    DEFAULT_VAT,
+    VAT_RATES,
+    make_invoices,
+    render_all,
+    render_invoice_pdf,
+)
 from p2p.data_gen.master_data import make_materials, make_vendors
 from p2p.data_gen.transactions import make_goods_receipts, make_purchase_orders
 
@@ -130,3 +136,8 @@ def test_pdf_renders_without_po_reference(world, tmp_path):
     render_invoice_pdf(header, items, vendor, path)
     assert header["po_number"] == ""
     assert path.read_bytes().startswith(b"%PDF")
+
+
+def test_all_pdfs_render_with_fitting_headers(world, tmp_path):
+    render_all(world.invoices, world.lines, world.vendors, tmp_path)
+    assert len(list(tmp_path.glob("*.pdf"))) == len(world.invoices)
