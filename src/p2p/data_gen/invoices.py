@@ -48,7 +48,7 @@ LABELS = {
         "desc": "Désignation",
         "qty": "Qté",
         "unit": "Unité",
-        "price": "Prix unitaire",
+        "price": "Prix",
         "amount": "Montant",
         "net": "Total HT",
         "vat": "TVA",

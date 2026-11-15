@@ -31,12 +31,12 @@ PROFILES = {
         "stamp": 0.0,
     },
     "bad": {
-        "dpi": (110, 130),
+        "dpi": (120, 140),
         "rotation": (1.5, 3.5),
-        "blur": (0.6, 1.0),
+        "blur": (0.5, 0.9),
         "noise": (10, 18),
         "jpeg": (40, 55),
-        "contrast": (0.70, 0.85),
+        "contrast": (0.78, 0.90),
         "specks": (20, 50),
         "stamp": 0.5,
     },
@@ -112,10 +112,15 @@ def _degrade_image(
     )
     scale = params["dpi"] / 72
     draw = ImageDraw.Draw(img)
+    gray = np.asarray(img.convert("L"))
     for _ in range(params["specks"]):
         x, y = rng.uniform(0, img.width), rng.uniform(0, img.height)
         r = rng.uniform(0.4, 1.2) * scale
         grey = rng.randint(60, 140)
+        pad = int(r * 4) + 2
+        patch = gray[max(0, int(y) - pad) : int(y) + pad, max(0, int(x) - pad) : int(x) + pad]
+        if patch.size and patch.min() < 170:
+            continue  # would touch ink or a table line, so no digit can be misread
         draw.ellipse((x - r, y - r, x + r, y + r), fill=(grey, grey, grey))
     if params["stamp"]:
         img = _add_stamp(img, rng, scale)
