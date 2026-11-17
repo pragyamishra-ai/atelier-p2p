@@ -42,6 +42,7 @@ PROFILES = {
     },
 }
 
+SPECK_CLEARANCE = 12  # points of blank paper required around a speck
 STAMP_TEXTS = ["RECEIVED", "REGISTERED", "ENTERED"]
 PARAM_COLUMNS = [
     "dpi",
@@ -82,7 +83,7 @@ def draw_params(rng: random.Random, quality: str) -> dict:
 
 
 def _add_stamp(img: Image.Image, rng: random.Random, scale: float) -> Image.Image:
-    """A faint, rotated 'received' stamp in the top right, where the header is empty."""
+    """A faint, rotated 'received' stamp, placed where the page has no ink underneath."""
     size = int(14 * scale)
     font = ImageFont.load_default(size=size)
     text = rng.choice(STAMP_TEXTS)
@@ -96,10 +97,18 @@ def _add_stamp(img: Image.Image, rng: random.Random, scale: float) -> Image.Imag
     )
     draw.text((pad - left, pad - top), text, font=font, fill=colour)
     tile = tile.rotate(rng.uniform(-15, 15), expand=True, resample=Image.Resampling.BICUBIC)
-    x = min(int(img.width * rng.uniform(0.55, 0.70)), img.width - tile.width)
-    y = min(int(img.height * rng.uniform(0.06, 0.14)), img.height - tile.height)
+    dark = np.asarray(img.convert("L")) < 215
+    best, best_ink = (0, 0), None
+    for _ in range(40):
+        x = min(int(img.width * rng.uniform(0.05, 0.75)), img.width - tile.width)
+        y = min(int(img.height * rng.uniform(0.04, 0.85)), img.height - tile.height)
+        ink = int(dark[y : y + tile.height, x : x + tile.width].sum())
+        if best_ink is None or ink < best_ink:
+            best, best_ink = (x, y), ink
+        if ink == 0:
+            break
     base = img.convert("RGBA")
-    base.alpha_composite(tile, (x, y))
+    base.alpha_composite(tile, best)
     return base.convert("RGB")
 
 
@@ -117,9 +126,9 @@ def _degrade_image(
         x, y = rng.uniform(0, img.width), rng.uniform(0, img.height)
         r = rng.uniform(0.4, 1.2) * scale
         grey = rng.randint(60, 140)
-        pad = int(r * 4) + 2
+        pad = max(int(r * 4) + 2, int(SPECK_CLEARANCE * scale))
         patch = gray[max(0, int(y) - pad) : int(y) + pad, max(0, int(x) - pad) : int(x) + pad]
-        if patch.size and patch.min() < 170:
+        if patch.size and int(patch.max()) - int(patch.min()) > 25:
             continue  # would touch ink or a table line, so no digit can be misread
         draw.ellipse((x - r, y - r, x + r, y + r), fill=(grey, grey, grey))
     if params["stamp"]:
